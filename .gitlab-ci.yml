@@ -1,0 +1,80 @@
+image: docker:latest
+
+stages:
+  - build
+  - test
+#  - package
+#  - deploy
+
+gradle-build:
+#  only:
+#    - tags
+  image: gradle:7.1.1-jdk11-openj9
+  stage: build
+  script: 
+  - "gradle --build-cache assemble"
+  artifacts: 
+    paths:
+      - build/libs/*.jar
+
+iq_policy_eval: &nexus_iq_policy_eval
+  image: sonatype/gitlab-nexus-iq-pipeline:1.106.0-01
+  script:
+    - /sonatype/evaluate -i WebProject build/libs/*.jar
+  artifacts:
+    name: "policy-eval-$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
+    paths:
+      - WebProject-policy-eval-report.html
+iq_policy_main:
+  <<: *nexus_iq_policy_eval
+  stage: test
+  variables:
+    IQ_STAGE : "build"
+  only:
+    - master
+    
+
+
+#docker-build: 
+#  variables:
+#    DOCKER_URL: onevibe12/spring-boot-test-cron
+#  stage: package
+#  image: docker:18.09.7-dind
+#  services:
+#    - docker:18.09-dind
+#  script:
+#    - docker login -u onevibe12 -p ehd183153!
+#    - docker build -t ${DOCKER_URL} .
+#    - docker tag ${DOCKER_URL} {DOCKER_URL}/web-app:v1.0
+#    - docker push ${DOCKER_URL}/web-app
+
+# deploy-job:     
+#   only:
+#     - tags
+#   variables:
+#     GIT_USER_NAME: root
+#     GIT_OPS_REPO_PWD: osckorea1234!
+#     GIT_OPS_REPO: 
+#     OPS_PROJECT: # osckorea1/gitops -> ArgoCD gitops project 
+#     DEPLOY_TYPE: # bluegreen -> gitops project -> directory
+#     HARBOR_URL: # harbor.vice.com
+#     APP_IMG: spring-boot-test-cron/web-app
+# 
+#   stage: deploy  
+#   image: nekottyo/kustomize-kubeval
+#   script:
+#     - echo "Deploying application..."
+#     - pwd
+#     - ls -al
+#     - git config --global user.name "osckorea"
+#     - git config --global user.email "vibe@naver.com"
+#     - echo "http://$GIT_USER_NAME:$GIT_OPS_REPO_PWD@$GIT_OPS_REPO/$OPS_PROJECT.git"
+#     - git clone --single-branch --branch main "http://$GIT_USER_NAME:$GIT_OPS_REPO_PWD@$GIT_OPS_REPO/$OPS_PROJECT.git"
+#     - cd gitops/"$DEPLOY_TYPE"
+#     - kustomize edit set image ${HARBOR_URL}/${APP_IMG}:${CI_COMMIT_TAG}
+#     - cd ../canary
+#     - kustomize edit set image ${HARBOR_URL}/${APP_IMG}:${CI_COMMIT_TAG}
+#     - git commit -am "Update image tag" && git push origin main
+#     - echo "Application successfully deployed."
+
+

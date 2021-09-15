@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hellowebtest
+  creationTimestamp: null
+  labels:
+    app: hellowebtest
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hellowebtest
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: hellowebtest
+    spec:
+      containers:
+      - image: harbor.medbiz.or.kr/web-app/test
+        name: webtestest
+        ports:
+        - containerPort: 8080
+        resources: {}
+status: {}
